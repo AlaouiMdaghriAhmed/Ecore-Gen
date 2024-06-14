@@ -1,0 +1,7 @@
+pyecore
+gradio
+hugchat
+langchain
+langchain_community
+huggingface
+huggingface-hub
