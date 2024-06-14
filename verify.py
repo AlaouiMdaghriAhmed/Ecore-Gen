@@ -1,11 +1,11 @@
 from hugchat import hugchat
 from hugchat.login import Login
 from pyecore.resources import ResourceSet, URI
-
+import os
 
 # Log into huggingface and grant authorization to huggingchat
-EMAIL = "mad.mik788@gmail.com"
-PASSWD = "42j!X$@N,5!36W$"
+EMAIL = os.environ['HF_EMAIL'] 
+PASSWD = os.environ['HF_PASSWORD'] 
 cookie_path_dir = "./cookies/" # NOTE: trailing slash (/) is required to avoid errors
 sign = Login(EMAIL, PASSWD)
 cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)
