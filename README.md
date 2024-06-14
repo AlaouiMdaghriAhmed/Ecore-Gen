@@ -10,23 +10,20 @@ This repository contains a Gradio-based web application that leverages open-sour
 ##Installation
 Clone the repository:
 
-'bash
-Copy code
+'''bash
 git clone https://github.com/your-username/your-repo-name.git
 cd your-repo-name
 Install the required packages:
-'
-'bash
-Copy code
+'''
+'''bash
 pip install -r requirements.txt
 Usage
 Navigate to the project directory:
-'
-'bash
-Copy code
+'''
+'''bash
 cd your-repo-name
 Run the application:
-'
+'''
 'bash
 Copy code
 python app.py
@@ -39,13 +36,12 @@ README.md: Project documentation.
 Contributing
 Contributions are welcome! Please create a new branch for each feature or bug fix:
 
-'bash
+'''bash
 git checkout -b feature/your-feature-name
 Submit a pull request with a detailed explanation of your changes.
-'
-License
-This project is licensed under the MIT License. See the LICENSE file for details.
+'''
 
-Contact
+
+##Contact
 For any questions or feedback, please open an issue or contact [mad.mik788@gmail.com].
 
