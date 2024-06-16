@@ -30,6 +30,10 @@ from queue import Queue
 from typing import Any
 
 from langchain.callbacks.base import BaseCallbackHandler
+from datasets import load_dataset
+
+dataset = load_dataset("VeryMadSoul/NLD")
+dataset = load_dataset("VeryMadSoul/errors.csv", split="train")
 
 
 class QueueCallback(BaseCallbackHandler):
@@ -175,12 +179,7 @@ def generate_response(user_message,  history):
 def clear_chat():
     return [], []
 
-examples = [
-    '''SimplePDL is an experimental language for specifying processes. The SPEM standard (Software Process Engineering Metamodel) proposed by the OMG inspired our work, but we also took ideas from the UMA metamodel (Unified Method Architecture) used in the EPF Eclipse plug-in (Eclipse Process Framework), dedicated to process modeling. SimplePDL is simplified to keep the presentation simple.
-Its metamodel is given in the figure 1. It defines the process concept (Process) composed of a set of work definitions (WorkDefinition) representing the activities to be performed during the development. One workdefinition may depend upon another (WorkSequence). In such a case, an ordering constraint (linkType) on the second workdefinition is specified, using the enumeration WorkSequenceType. For example, linking two workdefinitions wd1 and wd2 by a precedence relation of kind finishToStart means that wd2 can be started only if wd1 is finished (and respectively for startToStart, startToFinish and finishToFinish). SimplePDL does also allow to explicitly represent resources (Resource) that are needed in order to perform one workdefinition (designer, computer, server...) and also time constraints (min_time and max_time on WorkDefinition and Process) to specify the minimum (resp. maximum) time allowed to perform the workdefinition or the whole process.''',
-    " A FSM is conceived as an abstract machine that can be in one of a finite number of states. The machine is in only one state at a time; the state it is in at any given time is called the current state. It can change from one state to another when initiated by a triggering event or condition; this is called a transition. A particular FSM is defined by a list of its states, and the triggering condition for each transition.",
-    "Un Website est l'élément racine. Il est décrit par deux attributs (copyright et isMobileFriendly) et par une composition d'une ou plusieurs pages. Une page est décrite par deux attributs (son nom et son titre), ainsi que par des références à d'autres pages."
-]
+examples = [dataset['train'][i]['NLD'] for i in range(len(dataset['train']))]
 
 custom_css = """
 #logo-img {
@@ -313,7 +312,15 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
                         [system_prompt, model_name, temperature],
                         [chat, message, chatbot1, messages],
                     )
-
+            with gr.Row():
+                gr.Examples(
+                examples=examples,
+                inputs=message,
+                cache_examples=False,
+                fn=on_message_button_click,
+                outputs=[chat, message, chatbot1, messages],
+                examples_per_page=100
+                )
             
 
 if __name__ == "__main__":
