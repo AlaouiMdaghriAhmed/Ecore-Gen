@@ -156,18 +156,6 @@ def on_apply_settings_button_click(
 
 
 # Log into huggingface and grant authorization to huggingchat
-EMAIL = "mad.mik788@gmail.com"
-PASSWD = "42j!X$@N,5!36W$"
-cookie_path_dir = "./cookies/" # NOTE: trailing slash (/) is required to avoid errors
-sign = Login(EMAIL, PASSWD)
-cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)
-
-# Create your ChatBot
-chatbot = hugchat.ChatBot(cookies=cookies.get_dict(), system_prompt = default_system_prompt )  # or cookie_path="usercookies/<email>.json"
-chatbot.switch_llm(1)
-
-# Create a new conversation
-chatbot.new_conversation(switch_to = True) # switch to the new conversation
 
 
     
