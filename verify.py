@@ -3,6 +3,35 @@ from hugchat.login import Login
 from pyecore.resources import ResourceSet, URI
 import os
 
+from pathlib import Path
+from datasets import load_dataset
+import pandas as pd
+from datasets import Dataset,DatasetDict, load_dataset
+from huggingface_hub import CommitScheduler
+from uuid import uuid4
+import json
+from datetime import datetime
+
+
+import os
+JSON_DATASET_DIR = Path("json_dataset")
+JSON_DATASET_DIR.mkdir(parents=True, exist_ok=True)
+
+JSON_DATASET_PATH = JSON_DATASET_DIR / f"train-{uuid4()}.json"
+
+scheduler = CommitScheduler(
+    repo_id="VeryMadSoul/errors",
+    repo_type="dataset",
+    folder_path=JSON_DATASET_DIR,
+    path_in_repo="data",
+)
+
+def save_json(model: str, errors: list) -> None:
+    with scheduler.lock:
+        with JSON_DATASET_PATH.open("a") as f:
+            json.dump({"model": model, "error": errors, "datetime": datetime.now().isoformat()}, f)
+            f.write("\n")
+
 # Log into huggingface and grant authorization to huggingchat
 EMAIL = os.environ['HF_EMAIL'] 
 PASSWD = os.environ['HF_PASSWORD'] 
@@ -240,7 +269,7 @@ def verify_xmi(output,output_file_name):
     resource = rset.get_resource(URI("outs\output"+output_file_name+".ecore"))
 
   except Exception as e:
-    return e
+    return e.args[0]
   return 'no e'
 
 def iterative_prompting(NLD, XMI,max_iter=3):
@@ -250,7 +279,6 @@ def iterative_prompting(NLD, XMI,max_iter=3):
   i=0
     
  
-  task = "\nConvert to XMI, Output only the code :\n"
   XMI=""
   output = initial_prompt(NLD, description)
   history.append((NLD,str(output)))
@@ -273,9 +301,7 @@ def iterative_prompting(NLD, XMI,max_iter=3):
     error = "\n This Xmi was incorrect. Please fix the errors." + " "+str(correct_syntax)
     
     #print("**************************")
-
     #print(correct_syntax)
-
     #print("**************************")
 
 
@@ -286,6 +312,7 @@ def iterative_prompting(NLD, XMI,max_iter=3):
     #print(correct_syntax)
     error = (correct_syntax == 'no e')
     errors.append(correct_syntax)
- 
+  
+  save_json(chatbot.get_conversation_info().model, errors)
 
   return history, errors

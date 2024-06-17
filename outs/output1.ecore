@@ -1,0 +1,65 @@
+<ecore:EPackage name="library" nsURI="http://example.com/library" nsPrefix="lib">
+
+</ecore:EPackage>
+```
+
+### EClassifiers
+
+Inside the `EPackage`, you can define `EClassifiers`, which represent classes, data types, or other types in the model. The two most common types of `EClassifiers` are `EClass` and `EDataType`.
+
+#### EClass
+
+An `EClass` represents a class in the model. It can contain `EStructuralFeatures`, which define the attributes and references of the class.
+
+Example:
+
+```xml
+<eClassifiers xsi:type="ecore:EClass" name="Book">
+  <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  <eStructuralFeatures xsi:type="ecore:EReference" name="author" lowerBound="1" eType="#//Author" containment="true"/>
+</eClassifiers>
+```
+
+In this example, the `Book` class has a `title` attribute (of type `EString`) and an `author` reference (to the `Author` class).
+
+#### EStructuralFeatures
+
+`EStructuralFeatures` represent the attributes and references of an `EClass`. They can be of type `EAttribute` or `EReference`.
+
+- `EAttribute`: Represents an attribute of the class, with a name and a data type (`eType`).
+- `EReference`: Represents a reference to another `EClass`, with a name, a reference type (`eType`), and additional properties like `containment`, `lowerBound`, and `upperBound`.
+
+#### EDataType
+
+An `EDataType` represents a data type in the model, such as `EString`, `EInt`, or a user-defined data type.
+
+Example:
+
+```xml
+<eClassifiers xsi:type="ecore:EDataType" name="SSN" instanceClassName="java.lang.String">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="A social security number"/>
+  </eAnnotations>
+</eClassifiers>
+```
+
+In this example, the `SSN` data type is defined as a string with additional documentation.
+
+### Annotations
+
+Ecore supports annotations, which provide additional metadata or constraints for model elements. Annotations are represented by the `eAnnotations` element.
+
+Example:
+
+```xml
+<eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+  <details key="documentation" value="A social security number"/>
+</eAnnotations>
+```
+
+### Containers and Nested Packages
+
+To nest packages inside each other, use the `eContainedPackages` element under the parent `EPackage`.
+
+Example:
+

@@ -1,0 +1,72 @@
+<ecore:EPackage name="library" nsURI="http://example.com/library" nsPrefix="lib">
+
+</ecore:EPackage>
+```
+
+### EClassifiers
+
+Within the `EPackage`, you may define `EClassifiers`, representing classes, data types, or other types in the model. The primary types of `EClassifiers` include `EClass` and `EDataType`.
+
+#### EClass
+
+An `EClass` represents a class in the model and contains `EStructuralFeatures`, defining its attributes and references.
+
+Example:
+
+```xml
+<eClassifiers xsi:type="ecore:EClass" name="Book">
+  <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType #//EString"/>
+  <eStructuralFeatures xsi:type="ecore:EReference" name="author" lowerBound="1" eType="#//Author" containment="true"/>
+</eClassifiers>
+```
+
+Here, the `Book` class possesses a `title` attribute (of type `EString`) and an `author` reference (referencing the `Author` class).
+
+#### EStructuralFeatures
+
+`EStructuralFeatures` denote the attributes and references of an `EClass`. They come in two forms: `EAttribute` and `EReference`.
+
+- `EAttribute`: Defines an attribute of the class, consisting of a name and a data type (`eType`).
+- `EReference`: Represents a reference to another `EClass`, including a name, a reference type (`eType`), and optional properties like `containment`, `lowerBound`, and `upperBound`.
+
+#### EDataType
+
+An `EDataType` represents a data type in the model, such as `EString`, `EInt`, or custom data types.
+
+Example:
+
+```xml
+<eClassifiers xsi:type="ecore:EDataType" name="SSN" instanceClassName="java.lang.String">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="A social security number"/>
+  </eAnnotations>
+</eClassifiers>
+```
+
+This example introduces a `SSN` data type, defined as a string with added documentation.
+
+### Annotations
+
+Ecore allows annotations, providing additional metadata or constraints for model elements. Annotations are represented through the `eAnnotations` element.
+
+Example:
+
+```xml
+<eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+  <details key="documentation" value="A social security number"/>
+</eAnnotations>
+```
+
+### Containers and Nested Packages
+
+To embed packages within each other, utilize the `eContainedPackages` element beneath the parent `EPackage`.
+
+Example:
+
+```xml
+<ecore:EPackage name="RootPackage" nsURI="root_package.ecore" nsPrefix="rp">
+  ...
+  <eContainedPackages>
+    <eReference target="./sub_package.ecore"/>
+  </eContainedPackages>
+</ecore:EPackage>

@@ -33,7 +33,6 @@ from langchain.callbacks.base import BaseCallbackHandler
 from datasets import load_dataset
 
 dataset = load_dataset("VeryMadSoul/NLD")
-dataset = load_dataset("VeryMadSoul/errors.csv", split="train")
 
 
 class QueueCallback(BaseCallbackHandler):
@@ -48,7 +47,13 @@ class QueueCallback(BaseCallbackHandler):
     def on_llm_end(self, *args, **kwargs: Any) -> None:
         return self.queue.empty()
 
-HF_MODELS_NAMES = ["Cohere4ai-command-r-plus", "Llama-3-70B"]
+def apply_hf_settings_button(prompt, model_name) : 
+    verify.chatbot.switch_llm(HF_MODELS_NAMES.index(model_name))    
+    verify.chatbot.new_conversation(switch_to = True)
+    return "",[]
+
+HF_MODELS_NAMES = [model.name for model in verify.chatbot.get_available_llm_models()]
+
 
 DEFAULT_TEMPERATURE = 0.2
 
@@ -231,6 +236,20 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
         submit_button.click(fn=generate_response, inputs=[user_message, chatbot1], outputs=[user_message, chatbot1], concurrency_limit=32)
         
         clear_button.click(fn=clear_chat, inputs=None, outputs=[chatbot1, history], concurrency_limit=32)
+
+        with gr.Accordion("Settings", open=False):
+                            model_name = gr.Dropdown(
+                                choices=HF_MODELS_NAMES, value=HF_MODELS_NAMES[0], label="model"
+                            )
+                            settings_button = gr.Button("Apply")
+                            settings_button.click(
+                                apply_hf_settings_button,
+                                [user_message,model_name],
+                                [user_message, chatbot1],
+                            )
+
+
+
         with gr.Row():
             gr.Examples(
                 examples=examples,

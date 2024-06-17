@@ -1,0 +1,81 @@
+<ecore:EPackage name="library" nsURI="http://example.com/library" nsPrefix="lib">
+
+</ecore:EPackage>
+```
+
+### EClassifiers
+
+Within the `EPackage`, define `EClassifiers`—classes, data types, or other types. Commonly used `EClassifiers` include `EClass` and `EDataType`.
+
+#### EClass
+
+An `EClass` defines a class with possible `EStructuralFeatures`:
+
+- Attributes (`EAttribute`).
+- References (`EReference`).
+
+Example:
+
+```xml
+<eClassifiers xsi:type="ecore:EClass" name="Book">
+  <eStructuralFeatures>
+    <eStructuralFeature xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeature xsi:type="ecore:EReference" name="author" lowerBound="1" eType="#//Author" containment="true"/>
+  </eStructuralFeatures>
+</eClassifiers>
+```
+
+#### EDataType
+
+Define custom `EDataTypes`:
+
+```xml
+<eClassifiers xsi:type="ecore:EDataType" name="SSN" instanceClassName="java.lang.String">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="A social security number"/>
+  </eAnnotations>
+</eClassifiers>
+```
+
+### Annotations
+
+Use `eAnnotations` for metadata and constraints:
+
+```xml
+<eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+  <details key="documentation" value="A social security number"/>
+</eAnnotations>
+```
+
+### Comments and Documentation
+
+XML comments (<!-- -->) aren't supported; use `eAnnotations` instead.
+
+## Semantics
+
+Beyond syntax, Ecore files establish model behavior and constraints through inheritance, containment, multiplicities, and operations/constraints.
+
+### Inheritance
+
+Ecore allows single inheritance via `eSuperTypes`:
+
+```xml
+<eClassifiers xsi:type="ecore:EClass" name="FictionBook" eSuperTypes="#//Book">
+  ...
+</eClassifiers>
+```
+
+### Containment
+
+Containment relationships exist when a reference has `containment="true"`:
+
+```xml
+<eStructuralFeature xsi:type="ecore:EReference" name="author" lowerBound="1" eType="#//Author" containment="true"/>
+```
+
+### Multiplicities
+
+Multiplicities specify allowed numbers of features:
+
+```xml
+<eStructuralFeature xsi:type="ecore:EReference" name="chapters" upperBound="-1" eType="#//Chapter" containment="true"/>
