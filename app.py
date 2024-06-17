@@ -1,8 +1,3 @@
-
-
-
-
-
 from hugchat import hugchat
 from hugchat.login import Login
 from pyecore.resources import ResourceSet, URI
