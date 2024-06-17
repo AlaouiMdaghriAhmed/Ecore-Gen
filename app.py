@@ -155,7 +155,6 @@ def on_apply_settings_button_click(
     return chat, *on_clear_button_click(system_prompt)
 
 
-# Log into huggingface and grant authorization to huggingchat
 
 
     
