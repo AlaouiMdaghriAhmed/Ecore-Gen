@@ -35,8 +35,12 @@ python app.py
 
 ## Folder Structure
 - app.py: Main script to run the Gradio app.
+- verify.py : Verification functions and utils
+- outs : The output files directory
+- json_dataset : The intermediate storage to be commited to HuggingFace dataset
 - requirements.txt: List of required Python packages.
 - README.md: Project documentation.
+  
 
 ## Contributing
 Contributions are welcome! Please create a new branch for each feature or bug fix:
