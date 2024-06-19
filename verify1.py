@@ -1,19 +1,14 @@
-from hugchat import hugchat
-from hugchat.login import Login
+from openai import OpenAI
+import pyecore
 from pyecore.resources import ResourceSet, URI
 import os
-
-from pathlib import Path
-from datasets import load_dataset
-import pandas as pd
 from datasets import Dataset,DatasetDict, load_dataset
 from huggingface_hub import CommitScheduler
 from uuid import uuid4
 import json
 from datetime import datetime
-
+from pathlib import Path
 import glob
-import os
 JSON_DATASET_DIR = Path("json_dataset")
 JSON_DATASET_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -32,29 +27,34 @@ def save_json(model: str, errors: list) -> None:
             json.dump({"model": model, "error": errors, "datetime": datetime.now().isoformat()}, f)
             f.write("\n")
 
-# Log into huggingface and grant authorization to huggingchat
-EMAIL = os.environ['HF_EMAIL'] 
-PASSWD = os.environ['HF_PASSWORD'] 
-cookie_path_dir = "./cookies/" # NOTE: trailing slash (/) is required to avoid errors
-sign = Login(EMAIL, PASSWD)
-cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)
 
-# Create your ChatBot
-chatbot = hugchat.ChatBot(cookies=cookies.get_dict(), system_prompt = '''You are a systems engineer, expert in model driven engineering and meta-modeling
-Your OUTPUT should always follow this format :
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+
+model = "gpt-4o"
+
+default_system_prompt = '''You are a systems engineer, expert in model driven engineering and meta-modeling
+Your OUTPUT should always be an ecore xmi in this format :
 
 ```xml
 
-< YOUR CODE HERE >
+YOUR CODE HERE 
 
 ```
-''')  # or cookie_path="usercookies/<email>.json"
-chatbot.switch_llm(1)
+'''
 
-# Create a new conversation
-chatbot.new_conversation(switch_to = True) # switch to the new conversation
+fix_err_system_prompt = '''You are a systems engineer, expert in model driven engineering and meta-modeling,
+Fix the xmi provided with the errors
+NB : the error " Invalid tag name  '<cyfunction Comment at 0x000001943F9D32B0>'" refers to the <!-- --> comment tags remove them
 
-#create prompt
+Your OUTPUT should always be an ecore xmi in this format :
+
+```xml
+
+YOUR CODE HERE 
+
+```
+'''
+
 NLD= '''SimplePDL is an experimental language for specifying processes. The SPEM standard (Software Process Engineering Metamodel) proposed by the OMG inspired our work, but we also took ideas from the UMA metamodel (Unified Method Architecture) used in the EPF Eclipse plug-in (Eclipse Process Framework), dedicated to process modeling. SimplePDL is simplified to keep the presentation simple.
 Its metamodel is given in the figure 1. It defines the process concept (Process) composed of a set of work definitions (WorkDefinition) representing the activities to be performed during the development. One workdefinition may depend upon another (WorkSequence). In such a case, an ordering constraint (linkType) on the second workdefinition is specified, using the enumeration WorkSequenceType. For example, linking two workdefinitions wd1 and wd2 by a precedence relation of kind finishToStart means that wd2 can be started only if wd1 is finished (and respectively for startToStart, startToFinish and finishToFinish). SimplePDL does also allow to explicitly represent resources (Resource) that are needed in order to perform one workdefinition (designer, computer, server...) and also time constraints (min_time and max_time on WorkDefinition and Process) to specify the minimum (resp. maximum) time allowed to perform the workdefinition or the whole process.'''
 description='''# Writing Ecore Files
@@ -190,129 +190,160 @@ Ecore also supports the definition of operations and constraints on model elemen
 
 
 ##Reaccuring errors : 
-Invalid tag name error is linked to the tag <!-- --> don't use it in the syntax
+Invalid tag name refers to <!-- --> which are not accepted in xmi format
 
 ## Conclusion
 
 Ecore files provide a structured way to define models using an XML-based syntax. By understanding the syntax and semantics of Ecore files, developers can create robust and well-defined models that can be used as the foundation for various tools and applications within the Eclipse Modeling Framework.'''
-#prompt= "Convert the following description into an ecore xmi representation:\n" + NLD  + "\n Here's a technical document of how to write correct ecore file:\n" + description     #WHen tryin to add the description
-
-
-# Non stream response
-#query_result0 = chatbot.chat(prompt)
-#print(query_result0) # or query_result.text or query_result["text"]
-
-'''
-# Stream response
-for resp in chatbot.query(
-    "Hello",
-    stream=True
-):
-    print(resp)
-
-# Web search (new feature)
-query_result = chatbot.query("Hi!", web_search=True)
-print(query_result)
-for source in query_result.web_search_sources:
-    print(source.link)
-    print(source.title)
-    print(source.hostname)
-'''
-
-# Create a new conversation
-#chatbot.new_conversation(switch_to = True) # switch to the new conversation
-
-# Get conversations on the server that are not from the current session (all your conversations in huggingchat)
-#conversation_list = chatbot.get_remote_conversations(replace_conversation_list=True)
-# Get conversation list(local)
-#conversation_list = chatbot.get_conversation_list()
-
-# Get the available models (not hardcore)
-#models = chatbot.get_available_llm_models()
-
-# Switch model with given index
-
-#chatbot.switch_llm(2) # Switch to the second model
-
-# Get information about the current conversation
-#info = chatbot.get_conversation_info()
-#print(info.id, info.title, info.model, info.system_prompt, info.history)
-
-### Assistant
-#assistant = chatbot.search_assistant(assistant_name="ChatGpt") # assistant name list in https://huggingface.co/chat/assistants
-#assistant_list = chatbot.get_assistant_list_by_page(page=0)
-#chatbot.new_conversation(assistant=assistant, switch_to=True) # create a new conversation with assistant
-def initial_prompt(NLD, description):
-    prompt= "Convert the following description into an ecore xmi representation:\n" + NLD  + "\n Here's a technical document of how to write correct ecore file:\n" + description     #WHen tryin to add the description
-
-    return chatbot.chat(prompt)
-
-def fix_err(xmi, err):
-  prompt="Fix the following error: " +str(err)+"\n in the following xmi  :\n" + xmi+ "\n Here's a technical document of how to write correct ecore file:\n" + description
-
-  return chatbot.chat(prompt)
 
 def verify_xmi(output,output_file_name):
   #here we're gonna verify our Model's output by using the either a tool or a developped solution XMI parser
 
   #Return can be either bool or preferably the actual compilation error or xmi line error
-  output = str(output)
+
   #Returning a bool won't be that helpful ..
-  with open("outs\HF\output"+output_file_name+".ecore", "w") as file1:
+  with open("outs\OAI\output"+output_file_name+".ecore", "w+") as file1:
     # Writing data to a file
-    if "```xml" in output:
-      file1.writelines(output[output.find("```xml")+len("```xml\n"):output.rfind("```")])
-    else:
-      file1.writelines(output[output.find("```")+len("```\n"):output.rfind("```")])
+
+    file1.writelines(output[output.find("```xml")+len("```xml\n"):output.rfind("```")])
   try:
     rset = ResourceSet()
-    resource = rset.get_resource(URI("outs\HF\output"+output_file_name+".ecore"))
+    resource = rset.get_resource(URI("outs\OAI\output"+output_file_name+".ecore"))
 
   except Exception as e:
     return e.args[0]
   return 'no e'
 
-def iterative_prompting(NLD, XMI,max_iter=3):
-  for f in glob.glob('outs/HF/*'): os.remove(f)
-  history= []
 
-  i=0
+def fix_err(xmi, err , model, max_tokens = 2000):
+  client = OpenAI()
+
+  response = client.chat.completions.create(
+        model=model,
+  messages=[
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": fix_err_system_prompt
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": " \n Fix the following error: " +str(err)+"\n in the following xmi  :\n" + xmi+"\n \n Output only the code ." #NLD #description + "\nConvert to XMI:\n" + NLD     #WHen tryin to add the description
+        }
+      ]
+    }
+  ],
+        temperature=0.2,
+        max_tokens=max_tokens,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+  return response.choices[0].message.content
+
+
+def prompt(NLD, description,model=model, max_tokens=2000):
+    client = OpenAI()
+
+    """prompt.
+
+    Parameters
+    ----------
+    NLD :
+        Natural Language Description
+    description :
+        description
+    model : 
+        OpenAI model
+    max_tokens :
+        max_tokens
+
+    """
+    response = client.chat.completions.create(
+        model=model,
+  messages=[
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": default_system_prompt
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text" : "Convert the following description into an ecore xmi representation:\n" + NLD  + "\n Here's a technical document if you need it of how to write correct ecore file:\n" + description     #WHen tryin to add the description
+
+        }
+      ]
+    }
+  ],
+        temperature=0.2,
+        max_tokens=max_tokens,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+    return response.choices[0].message.content
+
+
+def iterative_prompting(NLD, XMI,max_iter=3,model=model):
+    for f in glob.glob('outs/OAI/*'): os.remove(f)
+    history= []
+
+
+    i=0
+
+
+    task = "\nConvert to XMI, Output only the code :\n"
+    XMI=""
+    gpt4o_output = prompt(NLD, description, model)
+    history.append((NLD,str(gpt4o_output)))
+
+    correct_syntax= verify_xmi(gpt4o_output,str(i))
     
- 
-  XMI=""
-  output = initial_prompt(NLD, description)
-  history.append((NLD,str(output)))
-  print(output)
-
-  correct_syntax= verify_xmi(output,str(i))
-  errors =[]
-  error = (correct_syntax == 'no e')
-  errors.append(correct_syntax)
-
-  while (not error) and i<=max_iter:
-    i+=1
-   
-
-    #print('****************************************')
-    #print('Iteration ' +  str(i))
-    #print('****************************************')
-
-
-    error = "\n This Xmi was incorrect. Please fix the errors." + " "+str(correct_syntax)
-    
-    #print("**************************")
-    #print(correct_syntax)
-    #print("**************************")
-
-
-    output = fix_err(output , correct_syntax)
-    history.append((error,str(output)))
-    #print(output)
-    correct_syntax = verify_xmi(output,str(i))
-    #print(correct_syntax)
     error = (correct_syntax == 'no e')
+    errors = []
     errors.append(correct_syntax)
-  
-  save_json(chatbot.get_conversation_info().model, errors)
+    while not error  and i<=3:
+        i+=1
 
-  return history, errors
+        print('****************************************')
+        print('Iteration ' +  str(i))
+        print('****************************************')
+
+
+        error = "\n This Xmi was incorrect. Please fix the errors : " + " "+str(correct_syntax)
+        print("**************************")
+
+        print(correct_syntax)
+
+        print("**************************")
+
+
+        gpt4o_output = fix_err(gpt4o_output , correct_syntax, model)
+        history.append((error,str(gpt4o_output)))
+
+        print(gpt4o_output)
+
+        correct_syntax = verify_xmi(gpt4o_output,str(i))
+        print(correct_syntax)
+
+
+
+        error = (correct_syntax == 'no e')
+        errors.append(correct_syntax)
+
+    save_json(model, errors)
+    return history, errors

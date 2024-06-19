@@ -11,10 +11,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import verify
-
+import verify1
 from queue import Empty, Queue
 from threading import Thread
-
+import os
 import gradio as gr
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_community.chat_models import ChatOpenAI
@@ -29,18 +29,24 @@ from datasets import load_dataset
 
 dataset = load_dataset("VeryMadSoul/NLD")
 
+BASE_DIR = 'outs'
+def list_files(directory):
+    dir_path = os.path.join(BASE_DIR, directory)
+    if not os.path.exists(dir_path):
+        return []
+    files = os.listdir(dir_path)
+    return files
 
-class QueueCallback(BaseCallbackHandler):
-    """Callback handler for streaming LLM responses to a queue."""
+def file_content(directory, file_name):
+    file_path = os.path.join(BASE_DIR, directory, file_name)
+    with open(file_path, 'r') as file:
+        content = file.read()
+    return content
 
-    def __init__(self, queue: Queue):
-        self.queue = queue
+def download_file(directory, file_name):
+    file_path = os.path.join(BASE_DIR, directory, file_name)
+    return file_path
 
-    def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
-        self.queue.put(token)
-
-    def on_llm_end(self, *args, **kwargs: Any) -> None:
-        return self.queue.empty()
 
 def apply_hf_settings_button(prompt, model_name) : 
     verify.chatbot.switch_llm(HF_MODELS_NAMES.index(model_name))    
@@ -67,87 +73,22 @@ YOUR CODE HERE
 
 ```
 '''
-# for the human, we will just inject the text
-human_message_prompt_template = HumanMessagePromptTemplate.from_template("{text}")
+
+def trigger_example1(example):
+    chat, updated_history = generate_response1(example)
+    return chat, updated_history
+
+def generate_response1(user_message,  history):
+
+    #history.append((user_message,str(chatbot.chat(user_message))))
+    history, errors = verify1.iterative_prompting(user_message,verify1.description,model=verify1.model)
+    return "", history
+
+def apply_gpt_settings_button(prompt, model_name):
+    verify1.model = model_name
+    return "", []
 
 
-def on_message_button_click(
-    chat: Optional[ChatOpenAI],
-    message: str,
-    chatbot_messages: ChatHistory,
-    messages: List[BaseMessage],
-) -> Tuple[ChatOpenAI, str, ChatHistory, List[BaseMessage]]:
-    if chat is None:
-        # in the queue we will store our streamed tokens
-        queue = Queue()
-        # let's create our default chat
-        chat = ChatOpenAI(
-            model_name=GPT_MODELS_NAMES[0],
-            temperature=DEFAULT_TEMPERATURE,
-            streaming=True,
-            callbacks=([QueueCallback(queue)]),
-        )
-    else:
-        # hacky way to get the queue back
-        queue = chat.callbacks[0].queue
-
-    job_done = object()
-
-    logging.info(f"Asking question to GPT, messages={messages}")
-    # let's add the messages to our stuff
-    messages.append(HumanMessage(content=message))
-    chatbot_messages.append((message, ""))
-    # this is a little wrapper we need cuz we have to add the job_done
-    def task():
-        chat(messages)
-        queue.put(job_done)
-
-    # now let's start a thread and run the generation inside it
-    t = Thread(target=task)
-    t.start()
-    # this will hold the content as we generate
-    content = ""
-    # now, we read the next_token from queue and do what it has to be done
-    while True:
-        try:
-            next_token = queue.get(True, timeout=1)
-            if next_token is job_done:
-                break
-            content += next_token
-            chatbot_messages[-1] = (message, content)
-            yield chat, "", chatbot_messages, messages
-        except Empty:
-            continue
-    # finally we can add our reply to messsages
-    messages.append(AIMessage(content=content))
-    logging.debug(f"reply = {content}")
-    logging.info(f"Done!")
-    return chat, "", chatbot_messages, messages
-
-
-def system_prompt_handler(value: str) -> str:
-    return value
-
-
-def on_clear_button_click(system_prompt: str) -> Tuple[str, List, List]:
-    return "", [], [SystemMessage(content=system_prompt)]
-
-
-def on_apply_settings_button_click(
-    system_prompt: str, model_name: str, temperature: float
-):
-    logging.info(
-        f"Applying settings: model_name={model_name}, temperature={temperature}"
-    )
-    chat = ChatOpenAI(
-        model_name=model_name,
-        temperature=temperature,
-        streaming=True,
-        callbacks=[QueueCallback(Queue())],
-    )
-    # don't forget to nuke our queue
-    chat.callbacks[0].queue.empty()
-    return chat, *on_clear_button_click(system_prompt)
 
 
 
@@ -238,7 +179,7 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
                 inputs=user_message,
                 cache_examples=False,
                 fn=trigger_example,
-                outputs=[chatbot],
+                outputs=[chatbot1],
                 examples_per_page=100
             )
         #user_message.submit(lambda x: gr.update(value=""), None, [user_message], queue=False)
@@ -246,19 +187,12 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
         #clear_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
         
     
-    with gr.Tab("OPENAI"):
-        system_prompt = gr.State(default_system_prompt)
-    # here we keep our state so multiple user can use the app at the same time!
-        messages = gr.State([SystemMessage(content=default_system_prompt)])
-    # same thing for the chat, we want one chat per use so callbacks are unique I guess
-        chat = gr.State(None)
-
-        with gr.Column(elem_id="col_container"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Image("images\logo.png", elem_id="logo-img", show_label=False, show_share_button=False, show_download_button=False)
-                with gr.Column(scale=3):
-                    gr.Markdown("""This Chatbot has been made to showcase our work on generating meta-model from textual descriptions.
+    with gr.Tab("OPENAI API"):
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Image("images\logo.png", elem_id="logo-img", show_label=False, show_share_button=False, show_download_button=False)
+            with gr.Column(scale=3):
+                gr.Markdown("""This Chatbot has been made to showcase our work on generating meta-model from textual descriptions.
                 <br/><br/>
                 The output of this conversation is going to be an ecore file that is validated by PyEcore [Pyecore (https://github.com/pyecore/pyecore)]
                 <br/>
@@ -270,58 +204,71 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
             """
                 )
             
+        with gr.Row():
+            chatbot1 = gr.Chatbot(show_label=False, show_share_button=False, show_copy_button=True)
+        
+        with gr.Row():
+            user_message = gr.Textbox(lines=1, placeholder="Ask anything ...", label="Input", show_label=False)
+
+      
+        with gr.Row():
+            submit_button = gr.Button("Submit")
+            clear_button = gr.Button("Clear chat")
+
             
-            chatbot1 = gr.Chatbot()
-            with gr.Column():
-                message = gr.Textbox(label="chat input")
-                message.submit(
-                    on_message_button_click,
-                    [chat, message, chatbot1, messages],
-                    [chat, message, chatbot1, messages],
-                    queue=True,
-                )
-                message_button = gr.Button("Submit", variant="primary")
-                message_button.click(
-                    on_message_button_click,
-                    [chat, message, chatbot1, messages],
-                    [chat, message, chatbot1, messages],
-                )
-            with gr.Row():
-                with gr.Column():
-                    clear_button = gr.Button("Clear")
-                    clear_button.click(
-                        on_clear_button_click,
-                        [system_prompt],
-                        [message, chatbot1, messages],
-                        queue=False,
-                    )
-                with gr.Accordion("Settings", open=False):
-                    model_name = gr.Dropdown(
-                        choices=GPT_MODELS_NAMES, value=GPT_MODELS_NAMES[0], label="model"
-                    )
-                    temperature = gr.Slider(
-                        minimum=0.0,
-                        maximum=1.0,
-                        value=0.7,
-                        step=0.1,
-                        label="temperature",
-                        interactive=True,
-                    )
-                    apply_settings_button = gr.Button("Apply")
-                    apply_settings_button.click(
-                        on_apply_settings_button_click,
-                        [system_prompt, model_name, temperature],
-                        [chat, message, chatbot1, messages],
-                    )
-            with gr.Row():
-                gr.Examples(
+
+                        
+        history = gr.State([])
+        
+        user_message.submit(fn=generate_response1, inputs=[user_message, chatbot1], outputs=[user_message, chatbot1], concurrency_limit=32)
+        submit_button.click(fn=generate_response1, inputs=[user_message, chatbot1], outputs=[user_message, chatbot1], concurrency_limit=32)
+        
+        clear_button.click(fn=clear_chat, inputs=None, outputs=[chatbot1, history], concurrency_limit=32)
+        
+
+        
+        with gr.Accordion("Settings", open=False):
+                            model_name = gr.Dropdown(
+                                choices=GPT_MODELS_NAMES, value=GPT_MODELS_NAMES[0], label="model"
+                            )
+                            settings_button = gr.Button("Apply")
+                            settings_button.click(
+                                apply_gpt_settings_button,
+                                [user_message,model_name],
+                                [user_message, chatbot1],
+                            )
+
+
+        with gr.Row():
+            gr.Examples(
                 examples=examples,
-                inputs=message,
+                inputs=user_message,
                 cache_examples=False,
-                fn=on_message_button_click,
-                outputs=[chat, message, chatbot1, messages],
+                fn=trigger_example1,
+                outputs=[chatbot1],
                 examples_per_page=100
-                )
+            )
+        #user_message.submit(lambda x: gr.update(value=""), None, [user_message], queue=False)
+        #submit_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
+        #clear_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
+    with gr.Tab("File Browser"):
+        
+        directory_dropdown = gr.Dropdown(choices=["HF", "OAI"], label="Select Directory")
+        file_dropdown = gr.Dropdown(choices=[], label="Files")
+        file_content_display = gr.Textbox(label="File Content", lines=10, interactive=False)
+        download_button = gr.File(label="Download File")
+
+        def update_file_list(directory):
+            files = list_files(directory)
+            return gr.Dropdown(choices=files)
+
+        def update_file_content_and_path(directory, file_name):
+            content = file_content(directory, file_name)
+            file_path = download_file(directory, file_name)
+            return content, file_path
+
+        directory_dropdown.change(update_file_list, inputs=directory_dropdown, outputs=file_dropdown)
+        file_dropdown.change(update_file_content_and_path, inputs=[directory_dropdown, file_dropdown], outputs=[file_content_display, download_button])
             
 
 if __name__ == "__main__":
