@@ -11,8 +11,8 @@ This repository contains a Gradio-based web application that leverages open-sour
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/AlaouiMdaghriAhmed/Ecore-Gen.git
+cd ecore-gen
 ```
 2.  Install the required packages:
 
@@ -24,7 +24,7 @@ pip install -r requirements.txt
 1. Navigate to the project directory:
 
 ```bash
-cd your-repo-name
+cd ecore-gen
 ```
 2. Run the application:
 
@@ -35,8 +35,11 @@ python app.py
 
 ## Folder Structure
 - app.py: Main script to run the Gradio app.
-- verify.py : Verification functions and utils
+- verify.py : Verification functions and utils for HF
+- verify1.py : Verification functions and utils for OPENAI
 - outs : The output files directory
+  	- HF : The huggingface output dir
+  	- OAI : The openai output dir
 - json_dataset : The intermediate storage to be commited to HuggingFace dataset
 - requirements.txt: List of required Python packages.
 - README.md: Project documentation.
