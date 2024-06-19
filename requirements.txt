@@ -5,3 +5,6 @@ langchain
 langchain_community
 huggingface
 huggingface-hub
+openai
+datasets
+glob
