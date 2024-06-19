@@ -5,8 +5,9 @@ This repository contains a Gradio-based web application that leverages open-sour
 - Two Tabs for Model Selection:
 	- HuggingChat API: Uses open-source language models from HuggingChat.
 	- OpenAI API: Uses language models from OpenAI.
+- A Tab for checking the generated Ecore files and downloading them
 - Ecore File Generation: Converts natural language descriptions into Ecore files.
-- Iterative Validation: Validates the generated Ecore files iteratively to ensure correctness.
+- Iterative Validation: The generated Ecore files are either syntactically correct or contain an error that could not be fixed and needs human intervention.
 ## Installation
 1. Clone the repository:
 
