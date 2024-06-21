@@ -1,21 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ecore:EPackage 
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
-    name="website"
-    nsURI="http://example.com/website"
-    nsPrefix="web">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" 
+    name="fsm" 
+    nsURI="http://example.com/fsm" 
+    nsPrefix="fsm">
 
-    <eClassifiers xsi:type="ecore:EClass" name="Website">
-        <eStructuralFeatures xsi:type="ecore:EAttribute" name="copyright" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isMobileFriendly" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
-        <eStructuralFeatures xsi:type="ecore:EReference" name="pages" upperBound="-1" eType="#//Page" containment="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="FSM">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="states" upperBound="-1" eType="#//State" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="transitions" upperBound="-1" eType="#//Transition" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="currentState" eType="#//State"/>
     </eClassifiers>
 
-    <eClassifiers xsi:type="ecore:EClass" name="Page">
+    <eClassifiers xsi:type="ecore:EClass" name="State">
         <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-        <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-        <eStructuralFeatures xsi:type="ecore:EReference" name="references" upperBound="-1" eType="#//Page"/>
     </eClassifiers>
+
+    <eClassifiers xsi:type="ecore:EClass" name="Transition">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#//State"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//State"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="trigger" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eClassifiers>
+
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="A FSM is an abstract machine that can be in one of a finite number of states. The machine is in only one state at a time; the state it is in at any given time is called the current state. It can change from one state to another when initiated by a triggering event or condition; this is called a transition. A particular FSM is defined by a list of its states, and the triggering condition for each transition."/>
+    </eAnnotations>
 
 </ecore:EPackage>
