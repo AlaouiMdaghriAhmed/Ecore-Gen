@@ -45,6 +45,13 @@ python app.py
 - requirements.txt: List of required Python packages.
 - README.md: Project documentation.
   
+## Tool Reference
+The project heavily relied on pyecore : https://github.com/pyecore/pyecore
+We also used the hugchat api : https://github.com/Soulter/hugging-chat-api
+
+## Gradio app on HuggingFace Spaces:
+The deployed gradio app doesn't contain the huggingchat tab as the api returned some error while being setup in the spaces
+The link is : 
 
 ## Contributing
 Contributions are welcome! Please create a new branch for each feature or bug fix:
