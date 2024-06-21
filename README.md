@@ -47,6 +47,7 @@ python app.py
   
 ## Tool Reference
 The project heavily relied on pyecore : https://github.com/pyecore/pyecore .
+
 We also used the hugchat api : https://github.com/Soulter/hugging-chat-api .
 
 ## Gradio app on HuggingFace Spaces:
