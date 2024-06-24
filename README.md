@@ -18,6 +18,8 @@ git clone https://github.com/AlaouiMdaghriAhmed/Ecore-Gen.git
 cd ecore-gen
 ```
 2.  Install the required packages:
+   
+It is recommeded to setup a Virtual Environment before installing the requirement : https://docs.python.org/3/tutorial/venv.html
 
 ```bash
 pip install -r requirements.txt
