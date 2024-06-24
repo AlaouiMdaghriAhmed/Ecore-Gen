@@ -1,5 +1,6 @@
 # Gradio App for Ecore generation and iterative validation using LLMs
 This repository contains a Gradio-based web application that leverages open-source language models from HuggingChat API and OpenAI API. The app provides three tabs: one for using models from HuggingChat and the other for models from OpenAI and the last to check to generated files and download them. Both tabs allow users to generate an Ecore file from a natural language description and iteratively validate it.
+
 A deployed version can be found on [HF Spaces](https://huggingface.co/spaces/VeryMadSoul/Ecore-Gen)
 
 ## Features
