@@ -8,8 +8,6 @@ from typing import List, Optional, Tuple
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
 import verify
 import verify1
 from queue import Empty, Queue
@@ -27,9 +25,16 @@ from typing import Any
 from langchain.callbacks.base import BaseCallbackHandler
 from datasets import load_dataset
 
+# Load environment variables
+load_dotenv()
+
+# Load the NLD dataset, contains the collected use cases
 dataset = load_dataset("VeryMadSoul/NLD")
 
+# Set base directory for file operations
 BASE_DIR = 'outs'
+
+# Function to list files in a directory
 def list_files(directory):
     dir_path = os.path.join(BASE_DIR, directory)
     if not os.path.exists(dir_path):
@@ -37,29 +42,37 @@ def list_files(directory):
     files = os.listdir(dir_path)
     return files
 
+# Function to read file content
 def file_content(directory, file_name):
     file_path = os.path.join(BASE_DIR, directory, file_name)
     with open(file_path, 'r') as file:
         content = file.read()
     return content
 
+# Function to get file path for download
 def download_file(directory, file_name):
     file_path = os.path.join(BASE_DIR, directory, file_name)
     return file_path
 
-
+# Function to apply HuggingFace model settings
 def apply_hf_settings_button(prompt, model_name) : 
     verify.chatbot.switch_llm(HF_MODELS_NAMES.index(model_name))    
     verify.chatbot.new_conversation(switch_to = True)
     return "",[]
 
+# Get available HuggingFace models
 HF_MODELS_NAMES = [model.name for model in verify.chatbot.get_available_llm_models()]
 
+# Define available GPT models
+GPT_MODELS_NAMES = ["gpt-3.5-turbo", "gpt-4",'gpt-4o']
 
+# Set default temperature for language models
 DEFAULT_TEMPERATURE = 0.2
 
+# Define type alias for chat history
 ChatHistory = List[str]
 
+# Configure logging
 logging.basicConfig(
     format="[%(asctime)s %(levelname)s]: %(message)s", level=logging.INFO
 )
@@ -74,41 +87,43 @@ YOUR CODE HERE
 ```
 '''
 
+# Function to trigger example generation for HuggingFace models
 def trigger_example1(example):
     chat, updated_history = generate_response1(example)
     return chat, updated_history
 
+# Function to generate response using HuggingFace models
 def generate_response1(user_message,  history):
 
     #history.append((user_message,str(chatbot.chat(user_message))))
     history, errors = verify1.iterative_prompting(user_message,verify1.description,model=verify1.model)
     return "", history
 
+# Function to apply GPT model settings
 def apply_gpt_settings_button(prompt, model_name):
     verify1.model = model_name
     return "", []
 
-
-
-
-
-
-    
+# Function to trigger example generation for GPT models
 def trigger_example(example):
     chat, updated_history = generate_response(example)
     return chat, updated_history
 
+# Function to generate response using GPT models
 def generate_response(user_message,  history):
 
     #history.append((user_message,str(chatbot.chat(user_message))))
     history, errors = verify.iterative_prompting(user_message,verify.description)
     return "", history
 
+# Function to clear chat history
 def clear_chat():
     return [], []
 
+# Prepare examples from the dataset
 examples = [dataset['train'][i]['NLD'] for i in range(len(dataset['train']))]
 
+# Define custom CSS for the Gradio interface
 custom_css = """
 #logo-img {
     border: none !important;
@@ -118,11 +133,12 @@ custom_css = """
     min-height: 300px;
 }
 """
-GPT_MODELS_NAMES = ["gpt-3.5-turbo", "gpt-4",'gpt-4o']
 
+
+# Create Gradio interface
 with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
 
-    
+    # HuggingFace API tab
     with gr.Tab("HF_API"):
         with gr.Row():
             with gr.Column(scale=1):
@@ -172,7 +188,7 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
                             )
 
 
-
+        
         with gr.Row():
             gr.Examples(
                 examples=examples,
@@ -186,7 +202,7 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
         #submit_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
         #clear_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
         
-    
+    # OpenAI API tab
     with gr.Tab("OPENAI API"):
         with gr.Row():
             with gr.Column(scale=1):
@@ -251,6 +267,8 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
         #user_message.submit(lambda x: gr.update(value=""), None, [user_message], queue=False)
         #submit_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
         #clear_button.click(lambda x: gr.update(value=""), None, [user_message], queue=False)
+
+    # File Browser tab
     with gr.Tab("File Browser"):
         
         directory_dropdown = gr.Dropdown(choices=["HF", "OAI"], label="Select Directory")
@@ -270,7 +288,7 @@ with gr.Blocks(analytics_enabled=False, css=custom_css) as demo:
         directory_dropdown.change(update_file_list, inputs=directory_dropdown, outputs=file_dropdown)
         file_dropdown.change(update_file_content_and_path, inputs=[directory_dropdown, file_dropdown], outputs=[file_content_display, download_button])
             
-
+# Main execution block
 if __name__ == "__main__":
     # demo.launch(debug=True)
     try:
