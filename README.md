@@ -3,6 +3,24 @@ This repository contains a Gradio-based web application that leverages open-sour
 
 A deployed version can be found on [HF Spaces](https://huggingface.co/spaces/VeryMadSoul/Ecore-Gen)
 
+## Setup
+### Libraries and Imports
+
+The script uses several libraries, including:
+- `hugchat` for Hugging Face chat functionality
+- `pyecore` for Ecore model handling
+- `gradio` for creating the web interface
+- `langchain` for language model interactions
+- `datasets` for loading example data
+
+### Global Variables and Settings
+
+- `BASE_DIR`: Base directory for output files
+- `HF_MODELS_NAMES`: List of available Hugging Face models
+- `GPT_MODELS_NAMES`: List of available GPT models
+- `DEFAULT_TEMPERATURE`: Default temperature setting for language models
+- `default_system_prompt`: System prompt for the chatbot
+
 ## Features
 - Two Tabs for Model Selection:
 	- HuggingChat API: Uses open-source language models from HuggingChat.
