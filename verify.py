@@ -1,8 +1,8 @@
+# Import necessary libraries
 from hugchat import hugchat
 from hugchat.login import Login
 from pyecore.resources import ResourceSet, URI
 import os
-
 from pathlib import Path
 from datasets import load_dataset
 import pandas as pd
@@ -11,14 +11,17 @@ from huggingface_hub import CommitScheduler
 from uuid import uuid4
 import json
 from datetime import datetime
-
 import glob
 import os
+
+# Set up directory for JSON dataset
 JSON_DATASET_DIR = Path("json_dataset")
 JSON_DATASET_DIR.mkdir(parents=True, exist_ok=True)
 
+# Generate a unique filename for the JSON dataset
 JSON_DATASET_PATH = JSON_DATASET_DIR / f"train-{uuid4()}.json"
 
+# Set up CommitScheduler for managing dataset commits
 scheduler = CommitScheduler(
     repo_id="VeryMadSoul/errors",
     repo_type="dataset",
@@ -26,6 +29,7 @@ scheduler = CommitScheduler(
     path_in_repo="data",
 )
 
+# Function to save JSON data
 def save_json(model: str, errors: list) -> None:
     with scheduler.lock:
         with JSON_DATASET_PATH.open("a") as f:
@@ -54,9 +58,11 @@ chatbot.switch_llm(1)
 # Create a new conversation
 chatbot.new_conversation(switch_to = True) # switch to the new conversation
 
-#create prompt
+# Define the Natural Language Description (NLD) for SimplePDL
 NLD= '''SimplePDL is an experimental language for specifying processes. The SPEM standard (Software Process Engineering Metamodel) proposed by the OMG inspired our work, but we also took ideas from the UMA metamodel (Unified Method Architecture) used in the EPF Eclipse plug-in (Eclipse Process Framework), dedicated to process modeling. SimplePDL is simplified to keep the presentation simple.
 Its metamodel is given in the figure 1. It defines the process concept (Process) composed of a set of work definitions (WorkDefinition) representing the activities to be performed during the development. One workdefinition may depend upon another (WorkSequence). In such a case, an ordering constraint (linkType) on the second workdefinition is specified, using the enumeration WorkSequenceType. For example, linking two workdefinitions wd1 and wd2 by a precedence relation of kind finishToStart means that wd2 can be started only if wd1 is finished (and respectively for startToStart, startToFinish and finishToFinish). SimplePDL does also allow to explicitly represent resources (Resource) that are needed in order to perform one workdefinition (designer, computer, server...) and also time constraints (min_time and max_time on WorkDefinition and Process) to specify the minimum (resp. maximum) time allowed to perform the workdefinition or the whole process.'''
+
+# Define technical description for writing Ecore files
 description='''# Writing Ecore Files
 
 ## Introduction
@@ -195,69 +201,21 @@ Invalid tag name error is linked to the tag <!-- --> don't use it in the syntax
 ## Conclusion
 
 Ecore files provide a structured way to define models using an XML-based syntax. By understanding the syntax and semantics of Ecore files, developers can create robust and well-defined models that can be used as the foundation for various tools and applications within the Eclipse Modeling Framework.'''
-#prompt= "Convert the following description into an ecore xmi representation:\n" + NLD  + "\n Here's a technical document of how to write correct ecore file:\n" + description     #WHen tryin to add the description
 
 
-# Non stream response
-#query_result0 = chatbot.chat(prompt)
-#print(query_result0) # or query_result.text or query_result["text"]
-
-'''
-# Stream response
-for resp in chatbot.query(
-    "Hello",
-    stream=True
-):
-    print(resp)
-
-# Web search (new feature)
-query_result = chatbot.query("Hi!", web_search=True)
-print(query_result)
-for source in query_result.web_search_sources:
-    print(source.link)
-    print(source.title)
-    print(source.hostname)
-'''
-
-# Create a new conversation
-#chatbot.new_conversation(switch_to = True) # switch to the new conversation
-
-# Get conversations on the server that are not from the current session (all your conversations in huggingchat)
-#conversation_list = chatbot.get_remote_conversations(replace_conversation_list=True)
-# Get conversation list(local)
-#conversation_list = chatbot.get_conversation_list()
-
-# Get the available models (not hardcore)
-#models = chatbot.get_available_llm_models()
-
-# Switch model with given index
-
-#chatbot.switch_llm(2) # Switch to the second model
-
-# Get information about the current conversation
-#info = chatbot.get_conversation_info()
-#print(info.id, info.title, info.model, info.system_prompt, info.history)
-
-### Assistant
-#assistant = chatbot.search_assistant(assistant_name="ChatGpt") # assistant name list in https://huggingface.co/chat/assistants
-#assistant_list = chatbot.get_assistant_list_by_page(page=0)
-#chatbot.new_conversation(assistant=assistant, switch_to=True) # create a new conversation with assistant
+# Function to generate initial prompt
 def initial_prompt(NLD, description):
     prompt= "Convert the following description into an ecore xmi representation:\n" + NLD  + "\n Here's a technical document of how to write correct ecore file:\n" + description     #WHen tryin to add the description
-
     return chatbot.chat(prompt)
 
+# Function to fix errors in XMI
 def fix_err(xmi, err):
   prompt="Fix the following error: " +str(err)+"\n in the following xmi  :\n" + xmi+ "\n Here's a technical document of how to write correct ecore file:\n" + description
-
   return chatbot.chat(prompt)
 
+# Function to verify XMI output
 def verify_xmi(output,output_file_name):
-  #here we're gonna verify our Model's output by using the either a tool or a developped solution XMI parser
-
-  #Return can be either bool or preferably the actual compilation error or xmi line error
   output = str(output)
-  #Returning a bool won't be that helpful ..
   with open("outs\HF\output"+output_file_name+".ecore", "w") as file1:
     # Writing data to a file
     if "```xml" in output:
@@ -267,52 +225,41 @@ def verify_xmi(output,output_file_name):
   try:
     rset = ResourceSet()
     resource = rset.get_resource(URI("outs\HF\output"+output_file_name+".ecore"))
-
   except Exception as e:
     return e.args[0]
   return 'no e'
 
+# Main function for iterative prompting
 def iterative_prompting(NLD, XMI,max_iter=3):
+  # Clear previous output files
   for f in glob.glob('outs/HF/*'): os.remove(f)
+      
   history= []
-
   i=0
-    
- 
   XMI=""
+    
+  # Generate initial output  
   output = initial_prompt(NLD, description)
   history.append((NLD,str(output)))
   print(output)
 
+  # Verify initial output  
   correct_syntax= verify_xmi(output,str(i))
   errors =[]
   error = (correct_syntax == 'no e')
   errors.append(correct_syntax)
 
+  # Iterative error fixing  
   while (not error) and i<=max_iter:
     i+=1
-   
-
-    #print('****************************************')
-    #print('Iteration ' +  str(i))
-    #print('****************************************')
-
-
     error = "\n This Xmi was incorrect. Please fix the errors." + " "+str(correct_syntax)
-    
-    #print("**************************")
-    #print(correct_syntax)
-    #print("**************************")
-
-
     output = fix_err(output , correct_syntax)
     history.append((error,str(output)))
-    #print(output)
     correct_syntax = verify_xmi(output,str(i))
-    #print(correct_syntax)
     error = (correct_syntax == 'no e')
     errors.append(correct_syntax)
-  
+      
+  # Save errors to JSON
   save_json(chatbot.get_conversation_info().model, errors)
 
   return history, errors
